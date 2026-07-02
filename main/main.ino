@@ -14,8 +14,10 @@ bool btnState2 = false;
 bool btnState3 = false;
 bool btnState4 = false;
 
-//max pattern length is 20
-const unsigned short MAX_PATTERN = 5;
+//max pattern length
+const unsigned short MAX_PATTERN = 15; // <---------- increase for difficulty!
+
+
 unsigned short pattern[MAX_PATTERN] = {0};
 unsigned short recordedPattern[MAX_PATTERN] = {0};
 unsigned short patternSize = 0;
@@ -75,7 +77,9 @@ void showPattern()
     }
 
     //decrease the timeToWait to increase Difficulty
-    //timeToWait = double(timeToWait)/1.2;
+    if(timeToWait > 100)
+        timeToWait = double(timeToWait)/1.1;
+    
 }
 
 void retrieveAnswer()
