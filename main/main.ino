@@ -15,17 +15,23 @@ bool btnState3 = false;
 bool btnState4 = false;
 
 //max pattern length is 20
-unsigned short pattern[20] = {0};
-unsigned short recordedPattern[20] = {0};
-unsigned short patternSize = 10;
+const unsigned short MAX_PATTERN = 5;
+unsigned short pattern[MAX_PATTERN] = {0};
+unsigned short recordedPattern[MAX_PATTERN] = {0};
+unsigned short patternSize = 0;
 
 bool gameOver = false;
+//time before showing each bit in the pattern, decreases with time to make game more difficult 
+long timeToWait = 500; // in millisecond
+
+//for push buttons
+const long debounceDelay = 50;
 
 void setup()
 {
     Serial.begin(9600);
     pinMode(buzzer, OUTPUT);
-    for(int i =0; i< 4; i++)
+    for(int i = 0; i < 4; i++)
     {
         pinMode(leds[i], OUTPUT);   // set leds as outputs
         pinMode(buttons[i], INPUT_PULLUP); // buttons as inputs - note that if you're not using an external pullup resistor, do INPUT_PULLUP to use the internal one! 
@@ -33,16 +39,17 @@ void setup()
     Serial.print("Pattern: ");
     for(int i = 0; i < patternSize; i++)
     {
-        pattern[i] = random(4);
+        pattern[i] = i;
         Serial.print(pattern[i]);
         Serial.print(" ");
     }
     Serial.println();
 
+    //randomize seed
+    randomSeed(analogRead(0));
+
 }
 
-//time before showing each bit in the pattern, decreases with time to make game more difficult 
-long timeToWait = 500; // in millisecond
 
 void showPattern()
 {
@@ -68,9 +75,8 @@ void showPattern()
     }
 
     //decrease the timeToWait to increase Difficulty
-    //timeToWait = double(timeToWait)/1.4;
+    //timeToWait = double(timeToWait)/1.2;
 }
-const long debounceDelay = 50;
 
 void retrieveAnswer()
 {
@@ -95,11 +101,19 @@ void retrieveAnswer()
         while(1)
         {
             //retrieve each answer
-            bool reading1 = digitalRead(buttons[0]);
-            bool reading2 = digitalRead(buttons[1]);
-            bool reading3 = digitalRead(buttons[2]);
-            bool reading4 = digitalRead(buttons[3]);
+            bool reading1 = !digitalRead(buttons[0]);
+            bool reading2 = !digitalRead(buttons[1]);
+            bool reading3 = !digitalRead(buttons[2]);
+            bool reading4 = !digitalRead(buttons[3]);
              
+            Serial.print("reading1 :");
+            Serial.println(reading1);
+            Serial.print("reading2 :");
+            Serial.println(reading2);
+            Serial.print("reading3 :");
+            Serial.println(reading3);
+            Serial.print("reading4 :");
+            Serial.println(reading4);
             bool reading = reading1||reading2||reading3||reading4;
             //if any button pressed
             if(prevButtonState!=reading)
@@ -134,8 +148,8 @@ void retrieveAnswer()
         
 
         digitalWrite(leds[recordedPattern[i]], 1);
-        tone(buzzer, buzzer_color[recordedPattern[i]], 200);
-        delay(200);
+        tone(buzzer, buzzer_color[recordedPattern[i]], 300);
+        delay(300);
         digitalWrite(leds[recordedPattern[i]], 0);
 
         if(recordedPattern[i] != pattern[i])
@@ -144,20 +158,108 @@ void retrieveAnswer()
             break;
         }
         i++;
+
     }
 }
 
 void evaluate()
 {
-    if(gameOver){
+    delay(500);
+    if(gameOver)
         //game is over, display loss and buzz at lower freq
-        tone(buzzer, 200, 200);
-        delay(200);
-    }
-    else{
-
-    }
+        showGameOver();
+    else
+        // correct move, show corret move
+        showCorrectGuess();
+    
+    delay(1000);
 }
+
+void showGameOver(){
+
+    //rotate leds
+    
+    digitalWrite(leds[0], 0);
+    digitalWrite(leds[1], 0);
+    digitalWrite(leds[2], 0);
+    digitalWrite(leds[3], 0);
+
+
+    digitalWrite(leds[0], 1);
+    tone(buzzer, 440, 300);
+    delay(300);
+    digitalWrite(leds[0], 0);
+    
+    digitalWrite(leds[1], 1);
+    noTone(buzzer);
+    delay(300);
+    digitalWrite(leds[1], 0);
+
+    digitalWrite(leds[3], 1);
+    tone(buzzer, 400, 300);
+    delay(300);
+    digitalWrite(leds[3], 0);
+}
+void showCorrectGuess(){
+    
+    digitalWrite(leds[0], 0);
+    digitalWrite(leds[1], 1);
+    digitalWrite(leds[2], 0);
+    digitalWrite(leds[3], 1);
+    tone(buzzer, 1850, 300);
+    delay(300);
+    tone(buzzer, 1960, 300);
+    delay(300);
+    
+    digitalWrite(leds[0], 1);
+    digitalWrite(leds[1], 0);
+    digitalWrite(leds[2], 1);
+    digitalWrite(leds[3], 0);
+    noTone(buzzer);
+    delay(300);
+    
+    digitalWrite(leds[0], 1);
+    digitalWrite(leds[1], 1);
+    digitalWrite(leds[2], 1);
+    digitalWrite(leds[3], 1);
+    tone(buzzer, 2200, 300);
+    delay(300);
+    
+    digitalWrite(leds[0], 0);
+    digitalWrite(leds[1], 0);
+    digitalWrite(leds[2], 0);
+    digitalWrite(leds[3], 0);
+}
+
+void showGameWon()
+{
+    digitalWrite(leds[0], 1);
+    digitalWrite(leds[1], 1);
+    digitalWrite(leds[2], 1);
+    digitalWrite(leds[3], 1);
+    tone(buzzer, 2489, 300);
+    delay(300);
+    
+    digitalWrite(leds[0], 0);
+    digitalWrite(leds[1], 0);
+    digitalWrite(leds[2], 0);
+    digitalWrite(leds[3], 0);
+    noTone(buzzer);
+    delay(200);
+    
+    digitalWrite(leds[0], 1);
+    digitalWrite(leds[1], 1);
+    digitalWrite(leds[2], 1);
+    digitalWrite(leds[3], 1);
+    tone(buzzer, 2200, 1000);
+    delay(1000);
+    
+    digitalWrite(leds[0], 0);
+    digitalWrite(leds[1], 0);
+    digitalWrite(leds[2], 0);
+    digitalWrite(leds[3], 0);
+}
+
 
 void increasePattern(){
     if(gameOver){
@@ -165,14 +267,19 @@ void increasePattern(){
         //restart
         patternSize = 0;
     }
+    
+    patternSize++;
+    if(patternSize<MAX_PATTERN)
+    {
+        //add new bit
+        pattern[patternSize] = random(4);
+    }
     else{
-        if(patternSize<20)
-        {
-            //increase
-        }
-        else{
-            //game won
-        }
+        //game won
+        showGameWon();
+        delay(1000);
+        //reset the game
+        patternSize = 0;
     }
 }
 
@@ -181,9 +288,10 @@ void loop()
     // show pattern
     showPattern();
     // get answer
-    //retrieveAnswer();
+    retrieveAnswer();
     // show if it is correct
-    //evaluate();
+    evaluate();
     // add a new bit to the pattern
-    //increasePattern();
+    increasePattern();
+
 }
