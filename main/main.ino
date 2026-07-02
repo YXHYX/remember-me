@@ -272,7 +272,7 @@ void increasePattern(){
     if(patternSize<MAX_PATTERN)
     {
         //add new bit
-        pattern[patternSize] = random(4);
+        pattern[patternSize-1] = random(4);
     }
     else{
         //game won
