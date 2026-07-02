@@ -6,6 +6,8 @@ const char leds[4] = {3,4,5,6};    // Led pins array
 const char buttons[4] = {7,8,9,10}; // signal pin of sensor to digital pin 5.
 const char buzzer = 11;
 
+const int buzzer_color[4] = {1500, 2000, 2500, 3000};
+
 //button states
 bool btnState1 = false;
 bool btnState2 = false;
@@ -15,17 +17,28 @@ bool btnState4 = false;
 //max pattern length is 20
 unsigned short pattern[20] = {0};
 unsigned short recordedPattern[20] = {0};
-unsigned short patternSize = 9;
+unsigned short patternSize = 10;
+
+bool gameOver = false;
 
 void setup()
 {
+    Serial.begin(9600);
     pinMode(buzzer, OUTPUT);
     for(int i =0; i< 4; i++)
     {
         pinMode(leds[i], OUTPUT);   // set leds as outputs
-        pinMode(buttons[i], INPUT); // buttons as inputs - note that if you're not using an external pullup resistor, do INPUT_PULLUP to use the internal one! 
+        pinMode(buttons[i], INPUT_PULLUP); // buttons as inputs - note that if you're not using an external pullup resistor, do INPUT_PULLUP to use the internal one! 
     }
-    Serial.begin(9600);
+    Serial.print("Pattern: ");
+    for(int i = 0; i < patternSize; i++)
+    {
+        pattern[i] = random(4);
+        Serial.print(pattern[i]);
+        Serial.print(" ");
+    }
+    Serial.println();
+
 }
 
 //time before showing each bit in the pattern, decreases with time to make game more difficult 
@@ -37,48 +50,25 @@ void showPattern()
     if(patternSize == 0)
         return;
 
-    for(int i = 9; i< patternSize; i++)
-    {
-        switch (pattern[i])
-        {
-        case 0:
-            digitalWrite(leds[0], 1);
-            digitalWrite(leds[1], 0);
-            digitalWrite(leds[2], 0);
-            digitalWrite(leds[3], 0);
-            break;
-        case 1:
-            digitalWrite(leds[0], 0);
-            digitalWrite(leds[1], 1);
-            digitalWrite(leds[2], 0);
-            digitalWrite(leds[3], 0);
-            break;
-        
-        case 2:
-            digitalWrite(leds[0], 0);
-            digitalWrite(leds[1], 0);
-            digitalWrite(leds[2], 1);
-            digitalWrite(leds[3], 0);
-            break;
-        
-        case 3:
-        
-            digitalWrite(leds[0], 0);
-            digitalWrite(leds[1], 0);
-            digitalWrite(leds[2], 0);
-            digitalWrite(leds[3], 1);
-            break;
-        
-        default:
-            //should not happen
-            break;
-        }
 
+    digitalWrite(leds[0], 0);
+    digitalWrite(leds[1], 0);
+    digitalWrite(leds[2], 0);
+    digitalWrite(leds[3], 0);
+
+    for(int i = 0; i < patternSize; i++)
+    {    
+        digitalWrite(leds[pattern[i]], 1);
+        tone(buzzer, buzzer_color[pattern[i]], timeToWait);
+        delay(timeToWait);
+        
+        digitalWrite(leds[pattern[i]], 0);
+        noTone(buzzer);
         delay(timeToWait);
     }
 
     //decrease the timeToWait to increase Difficulty
-    timeToWait = double(timeToWait)/1.4;
+    //timeToWait = double(timeToWait)/1.4;
 }
 const long debounceDelay = 50;
 
@@ -90,10 +80,9 @@ void retrieveAnswer()
     digitalWrite(leds[2], 0);
     digitalWrite(leds[3], 0);
 
-    bool mistake = false;
     bool prevButtonState = false;
     int i = 0;
-    while(i < patternSize && !mistake)
+    while(i < patternSize && !gameOver)
     {
         //reset button states
         btnState1 = false;
@@ -145,30 +134,56 @@ void retrieveAnswer()
         
 
         digitalWrite(leds[recordedPattern[i]], 1);
+        tone(buzzer, buzzer_color[recordedPattern[i]], 200);
         delay(200);
         digitalWrite(leds[recordedPattern[i]], 0);
 
         if(recordedPattern[i] != pattern[i])
         {
-            mistake = true;
+            gameOver = true;
             break;
         }
         i++;
     }
 }
 
-void evaluate();
+void evaluate()
+{
+    if(gameOver){
+        //game is over, display loss and buzz at lower freq
+        tone(buzzer, 200, 200);
+        delay(200);
+    }
+    else{
 
-void increasePattern();
+    }
+}
+
+void increasePattern(){
+    if(gameOver){
+        gameOver = false;
+        //restart
+        patternSize = 0;
+    }
+    else{
+        if(patternSize<20)
+        {
+            //increase
+        }
+        else{
+            //game won
+        }
+    }
+}
 
 void loop()
 { 
     // show pattern
     showPattern();
     // get answer
-    retrieveAnswer();
+    //retrieveAnswer();
     // show if it is correct
-    evaluate();
+    //evaluate();
     // add a new bit to the pattern
-    increasePattern();
+    //increasePattern();
 }
